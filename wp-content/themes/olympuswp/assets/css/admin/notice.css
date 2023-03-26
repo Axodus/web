@@ -1,0 +1,126 @@
+.oly-notice {
+	position: relative;
+	display: flex;
+	align-items: center;
+    border: 0;
+    padding: 0;
+	padding-left: 50px;
+}
+
+.oly-notice .oly-notice-icon {
+	position: absolute;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 50px;
+    height: 100%;
+    font-size: 20px;
+    background-color: #ff9d52;
+}
+
+.oly-notice.oly-review-notice .oly-notice-icon {
+    background-color: #fec107;
+}
+
+.oly-notice.oly-contest-notice .oly-notice-icon {
+    background-color: #ff3d49;
+}
+
+.oly-notice svg {
+	width: 1em;
+	height: 1em;
+	fill: #fff;
+}
+
+.oly-notice .oly-notice-content {
+	padding: 5px 10px;
+}
+
+.oly-notice .oly-notice-content p {
+	margin: 0;
+}
+
+.oly-notice .oly-notice-content a {
+    display: inline-block;
+    background-color: #ff9d52;
+    color: #fff;
+	border: 1px solid #ff9d52;
+    text-decoration: none;
+    text-transform: capitalize;
+    padding: 5px 10px;
+    margin: 5px 0;
+    border-radius: 2px;
+	transition: .3s;
+}
+
+.oly-notice .oly-notice-content a:hover {
+    background-color: #fff5ed;
+    color: #ff9d52;
+    border-color: #e8cab2;
+}
+
+.oly-notice.oly-review-notice .oly-notice-content a {
+    background-color: #fec107;
+    border-color: #fec107;
+}
+
+.oly-notice.oly-review-notice .oly-notice-content a:hover {
+    background-color: #fffbee;
+    color: #fec107;
+    border-color: #e7dab0;
+}
+
+.oly-notice.oly-contest-notice .oly-notice-content a {
+    background-color: #ff3d49;
+    border-color: #ff3d49;
+}
+
+.oly-notice.oly-contest-notice .oly-notice-content a:hover {
+    background-color: #fdebec;
+    color: #ff3d49;
+    border-color: #e8b2b5;
+}
+
+.oly-notice .oly-notice-content a.oly-notice-dismiss {
+    background-color: #f4f4f5;
+    color: #909399;
+    border-color: #d3d4d6;
+}
+
+.oly-notice .oly-notice-content a.oly-notice-dismiss:hover {
+    background-color: #909399;
+    color: #fff;
+    border-color: #909399;
+}
+
+.oly-notice .notice-dismiss {
+    bottom: 0;
+}
+
+/* RTL */
+body.rtl .oly-notice {
+	padding-left: 0;
+	padding-right: 50px;
+}
+
+body.rtl .oly-notice .oly-notice-icon {
+    left: auto;
+    right: 0;
+}
+
+/* Responsive */
+@media (max-width: 560px) {
+	.oly-notice {
+		padding-left: 0;
+	}
+
+	body.rtl .oly-notice {
+		padding-right: 0;
+	}
+
+	.oly-notice .oly-notice-icon,
+	.oly-notice .notice-dismiss {
+		display: none;
+	}
+}

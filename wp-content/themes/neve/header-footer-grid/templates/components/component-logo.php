@@ -43,12 +43,14 @@ if ( $show_desc ) {
 }
 $title_tagline .= '</div>';
 
+
+$aria_label = trim( get_bloginfo( 'name' ) . ' ' . get_bloginfo( 'description' ) );
 if ( $is_not_link ) {
-	$start_tag = '<span class="brand" title="' . get_bloginfo( 'name' ) . '" aria-label="' . get_bloginfo( 'name' ) . '">';
+	$start_tag = '<span class="brand" title="← ' . get_bloginfo( 'name' ) . '" aria-label="' . esc_attr( $aria_label ) . '">';
 	$end_tag   = '</span>';
 } else {
-	$start_tag = '<a class="brand" href="' . esc_url( home_url( '/' ) ) . '" title="' . get_bloginfo( 'name' ) . '"
-			aria-label="' . get_bloginfo( 'name' ) . '">';
+	$start_tag = '<a class="brand" href="' . esc_url( home_url( '/' ) ) . '" title="← ' . get_bloginfo( 'name' ) . '"
+			aria-label="' . esc_attr( $aria_label ) . '" rel="home">';
 	$end_tag   = '</a>';
 }
 
@@ -105,4 +107,3 @@ do_action( 'hfg_after_wp_get_attachment_image', $custom_logo_id, $image );
 	echo ( $end_tag ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	?>
 </div>
-

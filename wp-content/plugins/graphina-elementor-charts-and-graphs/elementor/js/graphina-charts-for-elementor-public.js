@@ -255,8 +255,10 @@ function initGraphinaCharts(id, type = 'area') {
                         labels: graphina_localize.graphinaAllGraphsOptions[id].options.category
                     });
                 } else {
-                    graphina_localize.graphinaAllGraphs[id].updateOptions(option, true, graphina_localize.graphinaAllGraphsOptions[id].animation);
-                    graphina_localize.graphinaAllGraphs[id].updateSeries(series, graphina_localize.graphinaAllGraphsOptions[id].animation);
+                    // graphina_localize.graphinaAllGraphs[id].updateOptions(option, true, graphina_localize.graphinaAllGraphsOptions[id].animation);
+                    // graphina_localize.graphinaAllGraphs[id].updateSeries(series, graphina_localize.graphinaAllGraphsOptions[id].animation);
+                    graphina_localize.graphinaAllGraphs[id].destroy();
+                    instantInitGraphinaCharts(id,type);
                 }
             }
         } else {
@@ -582,9 +584,14 @@ function getDataForChartsAjax(request_fields, type, id, selected_field = '',butt
         }
     };
 
-    if (request_fields['iq_' + type + '_chart_filter_enable'] != undefined && request_fields['iq_' + type + '_chart_filter_enable'] == 'yes') {
+    if (request_fields&&  request_fields['iq_' + type + '_chart_filter_enable'] != undefined && request_fields['iq_' + type + '_chart_filter_enable'] == 'yes') {
         selected_field = graphinaGetSelectOptionValue(id);
     }
+	if(!jQuery('body').hasClass("elementor-editor-active")){
+		request_fields = [];
+      
+	}
+    let pageID= document.querySelector("#"+type+'_chart'+id)?.closest('[data-elementor-id]')?.dataset?.elementorId
 
     jQuery.ajax({
         url: graphina_localize.ajaxurl,
@@ -596,6 +603,7 @@ function getDataForChartsAjax(request_fields, type, id, selected_field = '',butt
             button_filter_value:button_filter_value,
             chart_type: type,
             chart_id: id,
+            page_id : pageID,
             fields: request_fields
         },
         success: function(response) {
@@ -663,6 +671,7 @@ function getDataForChartsAjax(request_fields, type, id, selected_field = '',butt
                             graphina_localize.graphinaAllGraphsOptions[response.chart_id].animation = false;
                             instantInitGraphinaCharts(response.chart_id,type);
                         }
+                        
                         graphina_localize.graphinaAllGraphsOptions[response.chart_id].options = mergeDeep(graphina_localize.graphinaAllGraphsOptions[response.chart_id].options, response.chart_option);
                         if (isInit[response.chart_id] === true) {
                             initGraphinaCharts(response.chart_id, type);
@@ -697,7 +706,7 @@ function getDataForChartsAjax(request_fields, type, id, selected_field = '',butt
         error: function() {
             console.log('fail');
         }
-    });
+    });        
 
 }
 
@@ -999,7 +1008,7 @@ function setFieldsFromForminator(request_fields, response, type) {
 
 function graphina_google_chart_ajax_reload(callAjax,type,chart_id,ajaxReload,ajaxIntervalTime){
     let setting = graphina_localize.graphinaAllGraphsOptions[chart_id].setting_date;
-    if(typeof getDataForChartsAjax !== "undefined" && callAjax === "1") {
+	if(typeof getDataForChartsAjax !== "undefined" && callAjax === "1") {
         getDataForChartsAjax(setting, type, chart_id);
         if(ajaxReload === 'true'){
             window['ajaxIntervalGraphina_' + chart_id] = setInterval(function () {

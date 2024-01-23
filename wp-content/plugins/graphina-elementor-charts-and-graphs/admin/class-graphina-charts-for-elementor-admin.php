@@ -27,12 +27,8 @@ class Graphina_Charts_For_Elementor_Admin{
             <?php
         });
 
-        // Sale Banner Notice
-       if ( date('d/m/Y') >= '20/03/2023' && date('d/m/Y') <= '31/03/2023'){
-        add_action('admin_notices',  array($this, 'iqonic_sale_banner'), 0);
-        add_action('wp_ajax_iqonic_dismiss_notice', array($this, 'iqonic_dismiss_notice'), 10);
-        add_action('admin_enqueue_scripts', array($this, 'iqonic_notice_enqueue_admin_script'));
-    }
+        add_action('admin_notices', [$this, 'iqonic_sale_banner_notice']);
+        add_action('wp_ajax_iq_dismiss_notice', [$this, 'iq_dismiss_notice']);
        
     }
 
@@ -566,62 +562,38 @@ class Graphina_Charts_For_Elementor_Admin{
         }
         return [ 'data' =>'', 'status' => $status , 'message' => $message];
     }
-    public function iqonic_sale_banner()
+    public function iqonic_sale_banner_notice()
     {
-        if(get_user_meta(get_current_user_id(), 'iqonic_sale_banner_announcement',true))
-        return ;
-        
-        wp_enqueue_style( 'iqonic-admin-custom', get_stylesheet_uri() );
-                 ?>
-                <div class="notice iqonic-notice is-dismissible" id="iqonic_sale_banner_announcement">
-                <div class="iqonic-notice-message iqonic-sale">
-                    <a href="<?php echo esc_url('https://iqonic.design/') ?>" target="_blank"><img src="<?php echo esc_url(GRAPHINA_URL . '/admin/assets/images/sale_banner.jpg'); ?>" alt="<?php esc_attr('sale-banner', 'graphina-charts-for-elementor' ) ?>"></a>
-                </div>
-                    <div class="iqonic-notice-cta">
-                        <button class="iqonic-notice-dismiss iqonic-dismiss-welcome notice-dismiss" data-msg="iqonic_sale_banner_announcement"><span class="screen-reader-text"><?php esc_html_e('Dismiss', 'graphina-charts-for-elementor'); ?></span></button>
-                    </div>
-                </div>
-            <?php  
-            wp_add_inline_style( 'iqonic-admin-custom', '.iqonic-notice { background: #fff; border:none; padding:0px 0px; box-shadow:none} .iqonic-notice img { max-width:100%; width:100% } .wp-core-ui .notice.is-dismissible#iqonic_sale_banner_announcement { padding:0; } .iqonic-notice a { display:grid; } #iqonic_sale_banner_announcement.iqonic-notice .notice-dismiss:before { color: #fff;}');
-    }
-
-    public function iqonic_dismiss_notice()
-    {
-        add_user_meta(get_current_user_id(), 'iqonic_sale_banner_announcement', 'true', true);
-        wp_send_json_success();
-    }
-
-    public function iqonic_notice_enqueue_admin_script()
-    {
-        wp_register_script( 'admin-custom', '' );
-        wp_enqueue_script('admin-custom');
-        ob_start();
-
-        ?>
-        (function ($) {
-            "use strict";
-            jQuery(document).ready(function () {
-                jQuery(".iqonic-notice-dismiss").click(function (e) {
-                    e.preventDefault();
-                    jQuery(this).parent().parent(".iqonic-notice").fadeOut(600, function () {
-                        jQuery(this).parent().parent(".iqonic-notice").remove();
-                    });
-                    notify_wordpress(jQuery(this).data("msg"));
-                });
-            });
-        }(jQuery));
-
-        function notify_wordpress(message) {
-            var param = {
-                action: 'iqonic_dismiss_notice',
-                data: message
-            };
-            jQuery.post(ajaxurl, param);
+        $type="plugins" ;
+        $product="graphina"; 
+        $get_sale_detail= get_transient('iq-notice');
+        if(is_null($get_sale_detail) || $get_sale_detail===false ){
+            $get_sale_detail =wp_remote_get("https://assets.iqonic.design/wp-product-notices/notices.json?ver=" . wp_rand()) ;
+            set_transient('iq-notice',$get_sale_detail ,3600)  ;
         }
-        <?php
 
-        $script =  ob_get_clean();
-        wp_add_inline_script('admin-custom',$script);
+        if (!is_wp_error($get_sale_detail) && $content = json_decode(wp_remote_retrieve_body($get_sale_detail), true)) {
+            if(get_user_meta(get_current_user_id(),$content['data']['notice-id'],true)) return;
+            
+            $currentTime =  current_datetime();
+            if (($content['data']['start-sale-timestamp']  < $currentTime->getTimestamp() && $currentTime->getTimestamp() < $content['data']['end-sale-timestamp'] )&& isset($content[$type][$product])){
 
+            ?>
+            <div class="iq-notice notice notice-success is-dismissible" style="padding: 0;">
+                <a target="_blank" href="<?php echo esc_url($content[$type][$product]['sale-ink']??"#")  ?>">
+                    <img src="<?php echo esc_url($content[$type][$product]['banner-img'] ??"#" )  ?>" style="object-fit: contain;padding: 0;margin: 0;display: block;" width="100%" alt="">
+                </a>
+                <input type="hidden" id="iq-notice-id" value="<?php echo esc_html($content['data']['notice-id']) ?>">
+                <input type="hidden" id="iq-notice-nounce" value="<?php echo wp_create_nonce('iq-dismiss-notice') ?>">
+            </div>
+            <?php
+                wp_enqueue_script('iq-admin-notice',GRAPHINA_URL."/admin/assets/js/iq-admin-notice.js",['jquery'],false,true);
+            }
+        }
+    }
+    public function iq_dismiss_notice() {
+        if(wp_verify_nonce($_GET['nounce'],'iq-dismiss-notice')){
+            update_user_meta(get_current_user_id(),$_GET['key'],1);
+        }
     }
 }

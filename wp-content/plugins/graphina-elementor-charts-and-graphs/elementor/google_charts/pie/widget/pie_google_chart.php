@@ -316,6 +316,10 @@ class Pie_google_chart extends Widget_Base
         $pieData = [];
         $type = $this->get_chart_type();
         $settings = $this->get_settings_for_display();
+        $ajax_settings= [ 
+            'iq_'.  $type . '_interval_data_refresh' => $settings['iq_'.  $type . '_interval_data_refresh'],
+            'iq_'.  $type . '_can_chart_reload_ajax' => $settings['iq_'.  $type . '_can_chart_reload_ajax'],
+        ];
         $legendPosition = $settings['iq_' . $type . '_google_chart_legend_show'] === 'yes' ? $settings['iq_' . $type . '_google_piechart_legend_position'] : 'none';
         for ($i = 0; $i < $settings['iq_' . $type . '_chart_data_series_count']; $i++) {
             $colors[] =(string)graphina_get_dynamic_tag_data($settings, 'iq_' . $type . '_chart_element_color_' . $i);
@@ -422,7 +426,7 @@ class Pie_google_chart extends Widget_Base
                                     series: data,
                                     animation: true,
                                     renderType: 'PieChart',
-                                    setting_date:<?php echo json_encode($settings); ?>
+                                    setting_date:<?php echo Plugin::$instance->editor->is_edit_mode()?  json_encode($settings) : json_encode($ajax_settings); ?>
                                 },
                                 '<?php esc_attr_e($mainId); ?>',
                                 '<?php echo $this->get_chart_type(); ?>',

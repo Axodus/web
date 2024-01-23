@@ -338,8 +338,12 @@ class Distributed_Column_chart extends Widget_Base
     protected function render()
     {
         $settings = $this->get_settings_for_display();
-        $mainId = graphina_widget_id($this);
         $type = $this->get_chart_type();
+        $ajax_settings= [ 
+            'iq_'.  $type . '_interval_data_refresh' => $settings['iq_'.  $type . '_interval_data_refresh'],
+            'iq_'.  $type . '_can_chart_reload_ajax' => $settings['iq_'.  $type . '_can_chart_reload_ajax'],
+        ];
+        $mainId = graphina_widget_id($this);
         $gradient = [];
         $second_gradient = [];
         $fill_pattern = [];
@@ -645,6 +649,12 @@ class Distributed_Column_chart extends Widget_Base
                         fontWeight: '<?php echo $settings['iq_' . $type . '_chart_font_weight'] ?>',
                         labels: {
                             colors: '<?php echo strval($settings['iq_' . $type . '_chart_font_color']) ?>'
+                        },
+                        formatter:function (val,opt){
+                            if(val){
+                                val = val.split(',')
+                            }
+                            return val;
                         }
                     },
                     tooltip: {
@@ -709,6 +719,13 @@ class Distributed_Column_chart extends Widget_Base
                 }
                 if ("<?php echo   esc_html($settings['iq_' . $type . '_chart_yaxis_label_show'])=== "yes"; ?>" ) {
                     columnOptions.yaxis.labels.formatter = function (val) {
+                        if('<?php echo !empty($settings['iq_' . $type . '_is_chart_horizontal']) && $settings['iq_' . $type . '_is_chart_horizontal'] === 'yes' ?>'){
+                            val = '<?php echo esc_html($yLabelPrefix); ?>' + val + '<?php echo esc_html($yLabelPostfix); ?>';
+                            if(val){
+                                val = val.split(',')
+                            }
+                            return val;
+                        }
                          let decimal = parseInt('<?php echo !empty($settings['iq_' . $type . '_chart_yaxis_prefix_postfix_decimal_point']) ? $settings['iq_' . $type . '_chart_yaxis_prefix_postfix_decimal_point'] : 0; ?>') || 0;
                          if("<?php echo   esc_html($settings['iq_' . $type . '_chart_yaxis_format_number']) === "yes"; ?>"){
                             val = graphinNumberWithCommas(val,'<?php echo $localStringType ?>',decimal)
@@ -799,7 +816,7 @@ class Distributed_Column_chart extends Widget_Base
                             options: columnOptions,
                             series: [{name: '', data: []}],
                             animation: true,
-                            setting_date:<?php echo json_encode($settings); ?>
+                            setting_date:<?php echo Plugin::$instance->editor->is_edit_mode()?  json_encode($settings) : json_encode($ajax_settings); ?>
                         },
                         '<?php esc_attr_e($mainId); ?>'
                     );

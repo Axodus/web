@@ -395,6 +395,10 @@ class Column_google_chart extends Widget_Base
         $mainId = graphina_widget_id($this);
         $type = $this->get_chart_type();
         $settings = $this->get_settings_for_display();
+        $ajax_settings= [ 
+            'iq_'.  $type . '_interval_data_refresh' => $settings['iq_'.  $type . '_interval_data_refresh'],
+            'iq_'.  $type . '_can_chart_reload_ajax' => $settings['iq_'.  $type . '_can_chart_reload_ajax'],
+        ];
         $columnData =  $element_colors = $seriesStyleArray = $elementTitleArray = [];
         $category_count = 0;
         $legendPosition =  $settings['iq_' . $type . '_google_chart_legend_show'] === 'yes' ? $settings['iq_' . $type . '_google_chart_legend_position'] : 'none';
@@ -429,7 +433,16 @@ class Column_google_chart extends Widget_Base
                         if($key >= $category_count){
                             break;
                         }
-                        $valueData = !empty($value['iq_' . $type . '_chart_value_3_' . $j]) ? $value['iq_' . $type . '_chart_value_3_' . $j] : randomValueGenerator(0, 200);
+                        if (!empty($value['iq_' . $type . '_chart_value_3_' . $j]) && is_numeric($value['iq_' . $type . '_chart_value_3_' . $j]) && floor($value['iq_' . $type . '_chart_value_3_' . $j]) == $value['iq_' . $type . '_chart_value_3_' . $j]) {
+                            $numeric_val = (int)$value['iq_' . $type . '_chart_value_3_' . $j];
+                        }else if(!empty($value['iq_' . $type . '_chart_value_3_' . $j]) && filter_var($value['iq_' . $type . '_chart_value_3_' . $j], FILTER_VALIDATE_FLOAT) !== false) {
+                            $numeric_val = (float)$value['iq_' . $type . '_chart_value_3_' . $j];
+                        }else{
+                            $numeric_val = (int)$value['iq_' . $type . '_chart_value_3_' . $j];
+                        }
+
+                        $valueData = !empty($value['iq_' . $type . '_chart_value_3_' . $j]) ? $numeric_val : randomValueGenerator(0, 200);
+
                         $columnData[$key][] = $valueData;
                         if($settings['iq_' . $type . '_chart_annotation_show'] === 'yes'){
                             $columnData[$key][] = $annotationPrefix .$valueData.$annotationPostfix;
@@ -591,7 +604,7 @@ class Column_google_chart extends Widget_Base
                                 series: data,
                                 animation: true,
                                 renderType:'ColumnChart',
-                                setting_date:<?php echo json_encode($settings); ?>
+                                setting_date:<?php echo Plugin::$instance->editor->is_edit_mode()?  json_encode($settings) : json_encode($ajax_settings); ?>
                             },
                             '<?php esc_attr_e($mainId); ?>',
                             '<?php echo $this->get_chart_type(); ?>',

@@ -959,7 +959,7 @@ class ElementsKit_Widget_Image_Accordion extends Widget_Base {
             <?php foreach ( $ekit_img_accordion_items as $key => $item ) :
                 // enabling wrap link
                 if(!Plugin::$instance->editor->is_edit_mode() && $item['ekit_img_accordion_enable_wrap_link'] == 'yes') {
-                    $this->add_render_attribute( 'wrap-link-' . $key, 'data-link', json_encode($item['ekit_img_accordion_wrap_link_url']) );
+                    $this->add_render_attribute( 'wrap-link-' . $key, 'data-link', wp_json_encode($item['ekit_img_accordion_wrap_link_url']) );
                     $this->add_render_attribute( 'wrap-link-' . $key, 'data-behavior', $active_behavior );
                     $this->add_render_attribute( 'wrap-link-' . $key, 'data-active', $item['ekit_img_accordion_active'] );
                 }
@@ -985,11 +985,25 @@ class ElementsKit_Widget_Image_Accordion extends Widget_Base {
 
                         ?>
                         <span class="elementskit-icon-wraper ekit-image-accordion-actions">
-                        <?php if($item['ekit_img_accordion_enable_pupup'] == 'yes') { ?>
-                                <a href="<?php echo esc_url($item['ekit_img_accordion_bg']['url']); ?>" class="icon-outline circle" data-elementor-open-lightbox="yes" aria-label="pupup-button">
-                                <?php
+                        <?php if($item['ekit_img_accordion_enable_pupup'] == 'yes') { 
 
-                                    $migrated = isset( $item['__fa4_migrated']['ekit_img_accordion_pup_up_icons'] );
+							$this->add_lightbox_data_attributes( 'link' . $key, 
+								$item['ekit_img_accordion_bg']['id'], 
+								$item['ekit_img_accordion_enable_pupup'], 
+								$this->get_id() 
+							);
+
+							$this->add_render_attribute( 'link' . $key, 
+								[
+									'href' =>  esc_url($item['ekit_img_accordion_bg']['url']),
+									'aria-label' => "pupup-button", 
+									'class' => "icon-outline circle",
+								]
+							);
+							?>
+                                <a <?php $this->print_render_attribute_string( 'link' . $key ); ?>>
+                                <?php 
+									$migrated = isset( $item['__fa4_migrated']['ekit_img_accordion_pup_up_icons'] );
                                     // Check if its a new widget without previously selected icon using the old Icon control
                                     $is_new = empty( $item['ekit_img_accordion_pup_up_icon'] );
                                     if ( $is_new || $migrated ) {

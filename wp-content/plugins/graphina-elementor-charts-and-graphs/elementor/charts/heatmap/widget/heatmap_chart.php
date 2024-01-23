@@ -349,8 +349,12 @@ class Heatmap_chart extends Widget_Base
     protected function render()
     {
         $settings = $this->get_settings_for_display();
-        $mainId = graphina_widget_id($this);
         $type = $this->get_chart_type();
+        $ajax_settings= [ 
+            'iq_'.  $type . '_interval_data_refresh' => $settings['iq_'.  $type . '_interval_data_refresh'],
+            'iq_'.  $type . '_can_chart_reload_ajax' => $settings['iq_'.  $type . '_can_chart_reload_ajax'],
+        ];
+        $mainId = graphina_widget_id($this);
         $color = [];
         $data = ['series' => [], 'category' => []];
         $dataLabelPrefix = $dataLabelPostfix = $yLabelPrefix = $yLabelPostfix = $xLabelPrefix = $xLabelPostfix = '';
@@ -677,7 +681,7 @@ class Heatmap_chart extends Widget_Base
                             options: heatmapOptions,
                             series: [{name: '', data: []}],
                             animation: true,
-                            setting_date:<?php echo json_encode($settings); ?>
+                            setting_date:<?php echo Plugin::$instance->editor->is_edit_mode()?  json_encode($settings) : json_encode($ajax_settings); ?>
                         },
                         '<?php esc_attr_e($mainId); ?>'
                     );

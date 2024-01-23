@@ -12,7 +12,7 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 		 *
 		 * @var string
 		 */
-		protected $script_version = '2.1.1';
+		protected $script_version = '2.2.0';
 
 		/**
 		 * Unique ID to identify each notice
@@ -125,6 +125,22 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 	
 	
 		/**
+		 * style css for notice
+		 *
+		 * @var string
+		 */
+		protected $style_css;
+
+	
+	
+		/**
+		 * set if the notice will be shown to admins only
+		 */
+		protected $admin_only = true;
+
+	
+	
+		/**
 		 * get_version
 		 *
 		 * @return string
@@ -132,6 +148,7 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 		public function get_version() {
 			return $this->script_version;
 		}
+	
 
 		/**
 		 * get_script_location
@@ -210,6 +227,12 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 			return $this;
 		}
 
+		public function set_style_css( $style_css = '' ) {
+			$this->style_css = $style_css;
+
+			return $this;
+		}
+
 		public function set_button( $button = array() ) {
 			$button          = array_merge( $this->button, $button );
 			$this->buttons[] = $button;
@@ -219,6 +242,11 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 
 		public function set_id( $id ) {
 			$this->notice_id = $id;
+			return $this;
+		}
+
+		public function set_admin_only( $admin_only ) {
+			$this->$admin_only = $admin_only;
 			return $this;
 		}
 
@@ -273,6 +301,10 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 
 
 		public function call() {
+			// check if current user is admin
+			if (  ! current_user_can( 'manage_options' ) ) {
+				return false;
+			}
 			add_action( 'admin_notices', array( $this, 'get_notice' ) );
 		}
 	
@@ -321,11 +353,15 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 
 			<div class="notice-right-container <?php echo ( empty( $this->logo ) ? 'notice-container-full-width' : '' ); ?>">
 
+				<style>
+					<?php echo esc_html( $this->style_css); ?>
+				</style>
+
 				<?php if ( empty( $this->html ) ) : ?>
 					<?php echo ( empty( $this->title ) ? '' : sprintf( '<div class="notice-main-title notice-vert-space">%s</div>', esc_html($this->title) ) ); ?>
 
 					<div class="notice-message notice-vert-space">
-					<?php echo wp_kses( $this->message, \ElementsKit_Lite\Utils::get_kses_array() ); ?>
+					<?php echo wp_kses( $this->message, $this->get_kses_array() ); ?>
 					</div>
 
 					<?php if ( ! empty( $this->buttons ) ) : ?>
@@ -343,7 +379,7 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 					<?php endif; ?>
 
 				<?php else : ?>
-					<?php echo wp_kses( $this->html, \ElementsKit_Lite\Utils::get_kses_array() ); ?>
+					<?php echo wp_kses( $this->html, $this->get_kses_array() ); ?>
 				<?php endif; ?>
 
 			</div>
@@ -366,8 +402,12 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 		}
 
 		public static function dismiss_ajax_call() {
-
 			if( empty( $_POST['nonce'] ) || !wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'wpmet-notices' ) ){
+				return false;
+			}
+
+			// check if current user is admin
+			if ( ! current_user_can( 'manage_options' ) ) {
 				return false;
 			}
 
@@ -389,6 +429,11 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 		}
 	
 		public static function enqueue_scripts() {
+			// check if current user is admin
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
+
 			echo "
 			<script>
                 jQuery(document).ready(function ($) {
@@ -412,7 +457,7 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
                             type: 'POST',
                             data: {
                                 action 	        : 'wpmet-notices',
-                                notice_id 		: notice_id,
+                                notice_id       : notice_id,
                                 dismissible 	: dismissible,
                                 expired_time 	: expired_time,
 								nonce 			: '" . esc_js( wp_create_nonce( 'wpmet-notices' ) ) . "'
@@ -508,6 +553,113 @@ if ( ! class_exists( '\Oxaim\Libs\Notice' ) ) :
 
 			return self::$instance->config( $text_domain, ( is_null( $unique_id ) ? uniqid() : $unique_id ) );
 		}
+
+		public function get_kses_array(){
+			return array(
+				'a'                             => array(
+					'class'  => array(),
+					'href'   => array(),
+					'rel'    => array(),
+					'title'  => array(),
+					'target' => array(),
+					'style'  => array(),
+				),
+				'b'                             => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'div'                           => array(
+					'class' => array(),
+					'title' => array(),
+					'style' => array(),
+				),
+				'strong'                        => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'h1'                            => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'h2'                            => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'h3'                            => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'h4'                            => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'i'                             => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'img'                           => array(
+					'alt'		=> array(),
+					'class'		=> array(),
+					'height'	=> array(),
+					'src'		=> array(),
+					'width'		=> array(),
+					'style'		=> array(),
+					'title'		=> array(),
+					'srcset'	=> array(),
+					'loading'	=> array(),
+					'sizes'		=> array(),
+				),
+				'figure'                        => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'li'                            => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'ol'                            => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'p'                             => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'span'                          => array(
+					'class' => array(),
+					'title' => array(),
+					'style' => array(),
+				),
+				'iframe'                        => array(
+					'width'       => array(),
+					'height'      => array(),
+					'scrolling'   => array(),
+					'frameborder' => array(),
+					'allow'       => array(),
+					'src'         => array(),
+					'class' => array(),
+					'style' => array(),
+				),
+				'strike'                        => array(),
+				'br'                            => array(),
+				'table'                         => array(),
+				'ul'                            => array(
+					'class' => array(),
+					'style' => array(),
+				),
+				'svg'                           => array(
+					'class'           => true,
+					'aria-hidden'     => true,
+					'aria-labelledby' => true,
+					'role'            => true,
+					'xmlns'           => true,
+					'width'           => true,
+					'height'          => true,
+					'viewbox'         => true, // <= Must be lower case!
+					'preserveaspectratio' => true,
+				)
+			);
+		}	
 	}
 
 endif;

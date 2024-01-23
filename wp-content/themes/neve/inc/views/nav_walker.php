@@ -97,9 +97,6 @@ class Nav_Walker extends \Walker_Nav_Menu {
 	 * @return string
 	 */
 	public function add_caret( $title, $item, $args, $depth ) {
-		$args->before = '';
-		$args->after  = '';
-
 		if ( neve_is_amp() ) {
 			return $title;
 		}
@@ -116,10 +113,13 @@ class Nav_Walker extends \Walker_Nav_Menu {
 			return $title;
 		}
 
+		$args->before = '';
+		$args->after  = '';
+
 		$default_caret_settings = [
 			'side'      => is_rtl() ? 'left' : 'right',
 			'icon_type' => 'icon',
-			'icon'      => '<svg aria-label="' . esc_attr__( 'Dropdown', 'neve' ) . '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z"/></svg>',
+			'icon'      => '<svg fill="currentColor" aria-label="' . esc_attr__( 'Dropdown', 'neve' ) . '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z"/></svg>',
 		];
 
 		$component_id    = $args->component_id ?? '';
@@ -151,7 +151,7 @@ class Nav_Walker extends \Walker_Nav_Menu {
 				$expand_dropdowns = apply_filters( 'neve_first_level_expanded', false );
 				$additional_class = $expand_dropdowns && $depth === 0 ? 'dropdown-open' : '';
 
-				$caret  = '<button ' . $expanded . ' type="button" class="caret-wrap navbar-toggle ' . esc_attr( (string) $item->menu_order ) . ' ' . esc_attr( $additional_class ) . '" style="' . esc_attr( $caret_wrap_css ) . '">';
+				$caret  = '<button ' . $expanded . ' type="button" class="caret-wrap navbar-toggle ' . esc_attr( (string) $item->menu_order ) . ' ' . esc_attr( $additional_class ) . '" style="' . esc_attr( $caret_wrap_css ) . '"  aria-label="' . __( 'Toggle', 'neve' ) . ' ' . wp_filter_nohtml_kses( $title ) . '">';
 				$caret .= $caret_pictogram;
 				$caret .= '</button>';
 
@@ -209,6 +209,7 @@ class Nav_Walker extends \Walker_Nav_Menu {
 		$mobile_button_caret_css .= '.header-menu-sidebar .nav-ul li .wrap a { flex-grow: 1; display: flex; }';
 		$mobile_button_caret_css .= '.header-menu-sidebar .nav-ul li .wrap a .dd-title { width: var(--wrapdropdownwidth); }';
 		$mobile_button_caret_css .= '.header-menu-sidebar .nav-ul li .wrap button { border: 0; z-index: 1; background: 0; }';
+		$mobile_button_caret_css .= '.header-menu-sidebar .nav-ul li.menu-item-has-children:not([class*=block])  > .wrap > a { margin-right: calc(-1em - (18px*2));}';
 
 		return Dynamic_Css::minify_css( $mobile_button_caret_css );
 	}
@@ -386,6 +387,9 @@ menuCarets.forEach( function (caretElem) {
 	caretElem.addEventListener( "keydown", (event) => {
 		if ( event.keyCode === 13 ) {
 			event.target.parentElement.classList.toggle('active');
+            if ( event.target.getAttribute('aria-pressed') ) {
+				event.target.setAttribute('aria-pressed', 'true' === event.target.getAttribute('aria-pressed') ? 'false' : 'true');
+			}
 		}
 	});
 	caretElem.parentElement.parentElement.addEventListener( "focusout", (event) => {
@@ -394,12 +398,13 @@ menuCarets.forEach( function (caretElem) {
 			return;
 		};
 		caretElem.parentElement.classList.remove('active');
+        caretElem.setAttribute('aria-pressed', 'false');
 	});
 } );
 JS;
 
 		$script_min_js = <<<'JSMIN'
-var menuCarets=document.querySelectorAll(".nav-ul li > .wrap > .caret");menuCarets.forEach((function(e){e.addEventListener("keydown",(e=>{13===e.keyCode&&e.target.parentElement.classList.toggle("active")})),e.parentElement.parentElement.addEventListener("focusout",(t=>{e.parentElement.parentElement.contains(t.relatedTarget)||e.parentElement.classList.remove("active")}))}));
+var menuCarets=document.querySelectorAll(".nav-ul li > .wrap > .caret");menuCarets.forEach(function(e){e.addEventListener("keydown",e=>{13===e.keyCode&&(e.target.parentElement.classList.toggle("active"),e.target.getAttribute("aria-pressed")&&e.target.setAttribute("aria-pressed","true"===e.target.getAttribute("aria-pressed")?"false":"true"))}),e.parentElement.parentElement.addEventListener("focusout",t=>{!e.parentElement.parentElement.contains(t.relatedTarget)&&(e.parentElement.classList.remove("active"),e.setAttribute("aria-pressed","false"))})});
 JSMIN;
 
 

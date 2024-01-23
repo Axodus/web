@@ -249,7 +249,7 @@ class Data_Table extends Widget_Base
                     10=>__(10),
                     50=>__(50),
                     100=>__(100),
-                    'all'=>__('All'),
+                    -1=>__('All'),
                 ]
             ]
         );
@@ -786,7 +786,7 @@ class Data_Table extends Widget_Base
         $type = $this->get_name();
         $mainId = graphina_widget_id($this);
         $settings = $this->get_settings_for_display();
-
+        
         if (!empty($settings['iq_' . $type . '_button_menu']) && !is_array($settings['iq_' . $type . '_button_menu'])) {
             $button = [$settings['iq_' . $type . '_button_menu']];
         } else {
@@ -895,10 +895,13 @@ class Data_Table extends Widget_Base
                         sort: '<?php echo $settings['iq_' . $type . 'table_sort'] == 'yes' ?>',
                         pagingType: '<?php echo $settings['iq_' . $type . 'pagination_type']; ?>',
                         scrollX: '<?php echo $settings['iq_' . $type . 'table_scroll']; ?>',
+                        pageLength: '<?php echo $settings['iq_' . $type . '_pagelength']; ?>',
                         responsive: true,
+                        <?php if(wp_is_mobile()){ ?>
                         rowReorder: {
                             selector: 'td:nth-child(2)'
                         },
+                        <?php } ?>
                         dom: 'Bfrtip',
                         lengthMenu: [[10, 50, 100, -1], [10, 50, 100, 'All']],
                         buttons: JSON.parse('<?php echo json_encode($button); ?>'),

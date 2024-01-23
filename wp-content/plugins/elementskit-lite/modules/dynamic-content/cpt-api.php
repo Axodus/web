@@ -15,7 +15,7 @@ class ElementsKit_Cpt_Api extends Core\Handler_Api {
 		$content_type = $this->request['type'];
 		
 		$builder_post_title = 'dynamic-content-' . $content_type . '-' . $content_key;
-		$builder_post_id    = get_page_by_title( $builder_post_title, OBJECT, 'elementskit_content' );
+		$builder_post_id    = Utils::get_page_by_title( $builder_post_title, 'elementskit_content' );
 
 		if ( is_null( $builder_post_id ) ) {
 			$defaults        = array(
@@ -51,7 +51,7 @@ class ElementsKit_Cpt_Api extends Core\Handler_Api {
 
 		// get wpml post by language code
 		$referer = wp_get_referer();
-		$referer = parse_url($referer);
+		$referer = wp_parse_url($referer);
 		$referer = !empty($referer['query']) ? $referer['query'] : '';
 		$referer = parse_str($referer, $referer_args);
 

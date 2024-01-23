@@ -312,6 +312,10 @@ class Area_chart extends Widget_Base
     {
         $type = $this->get_chart_type();
         $settings = $this->get_settings_for_display();
+        $ajax_settings= [ 
+            'iq_'.  $type . '_interval_data_refresh' => $settings['iq_'.  $type . '_interval_data_refresh'],
+            'iq_'.  $type . '_can_chart_reload_ajax' => $settings['iq_'.  $type . '_can_chart_reload_ajax'],
+        ];
         $mainId = graphina_widget_id($this);
 
         $second_gradient  = $fill_pattern = $dropShadowSeries = $tooltipSeries = $gradient = $markerSize = $markerStrokeColor = $markerStokeWidth = $markerShape  = $gradient_new = $second_gradient_new = $fill_pattern_new = [];
@@ -780,7 +784,7 @@ class Area_chart extends Widget_Base
                             options: areaOptions,
                             series: [{name: '', data: []}],
                             animation: true,
-                            setting_date:<?php echo json_encode($settings); ?>
+                            setting_date:<?php echo Plugin::$instance->editor->is_edit_mode()?  json_encode($settings) : json_encode($ajax_settings); ?>
                         },
                         '<?php esc_attr_e($mainId); ?>'
                     );
@@ -793,7 +797,7 @@ class Area_chart extends Widget_Base
         }
         if ($settings['iq_' . $type . '_chart_data_option'] !== 'manual') {
             if($settings['iq_' . $type . '_chart_data_option'] === 'forminator'){
-                graphina_ajax_reload(true, [], $type, $mainId);
+                graphina_ajax_reload(true, $ajax_setting, $type, $mainId);
             }else if(isGraphinaPro()){
                 graphina_ajax_reload($callAjax, [], $type, $mainId);
             }

@@ -80,7 +80,7 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_percentage',
             [
                 'label' => esc_html__( 'Percentage', 'elementskit-lite' ),
@@ -224,7 +224,7 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_title_color',
             [
                 'label' => esc_html__( 'Title Color', 'elementskit-lite' ),
@@ -253,7 +253,7 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
         $this->add_responsive_control(
 			'ekit_piechart_title_margin',
 			[
-				'label' =>esc_html__( 'Ttitle margin', 'elementskit-lite' ),
+				'label' =>esc_html__( 'Title margin', 'elementskit-lite' ),
 				'type' => Controls_Manager::DIMENSIONS,
 				'size_units' => [ 'px', 'em', '%' ],
 				'default' => 	[
@@ -284,7 +284,7 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_content_color',
             [
                 'label' => esc_html__( 'Content Color', 'elementskit-lite' ),
@@ -406,6 +406,7 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
                 'label' => esc_html__( 'Piechart Size', 'elementskit-lite' ),
                 'type' => Controls_Manager::SLIDER,
                 'size_units' => [ 'px' ],
+				'render_type' => 'template',
                 'range' => [
                     'px' => [
                         'min' => 100,
@@ -416,9 +417,12 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
                 'default' => [
                     'size' => 150,
                 ],
+				'selectors' => [
+					'{{WRAPPER}} .ekit-wid-con .ekit-single-piechart > .piechart canvas' => 'height: {{SIZE}}{{UNIT}}; width: {{SIZE}}{{UNIT}};',
+				],
             ]
         );
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_border_size',
             [
                 'label' => esc_html__( 'Border Size', 'elementskit-lite' ),
@@ -451,48 +455,52 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_line_color',
             [
                 'label' => esc_html__( 'Bar Color', 'elementskit-lite' ),
                 'type' => Controls_Manager::COLOR,
+				'render_type' => 'template',
                 'condition' => [
                     'ekit_piechart_color_style' => 'normal'
-                ]
+				],
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_bar_color_bg',
             [
                 'label' => esc_html__( 'Bar Background Color', 'elementskit-lite' ),
                 'type' => Controls_Manager::COLOR,
+				'render_type' => 'template',
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_gradientColor1',
             [
                 'label' => esc_html__( 'Gradient Color1', 'elementskit-lite' ),
                 'type' => Controls_Manager::COLOR,
+				'render_type' => 'template',
                 'condition' => [
                     'ekit_piechart_color_style' => 'gradient'
-                ]
+				],
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_gradientColor2',
             [
                 'label' => esc_html__( 'Gradient Color2', 'elementskit-lite' ),
                 'type' => Controls_Manager::COLOR,
+				'render_type' => 'template',
                 'condition' => [
                     'ekit_piechart_color_style' => 'gradient'
-                ]
+				],
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_iocn_color',
             [
                 'label'     => esc_html__( ' Icon Color', 'elementskit-lite' ),
@@ -509,7 +517,7 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
             ]
         );
 
-        $this->add_responsive_control(
+        $this->add_control(
             'ekit_piechart_content_color_number',
             [
                 'label' => esc_html__( ' Number Color', 'elementskit-lite' ),
@@ -623,23 +631,22 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
     }
 
     protected function render( ) {
-        echo '<div class="ekit-wid-con" >';
+        echo '<div class="ekit-wid-con">';
             $this->render_raw();
         echo '</div>';
     }
 
     protected function render_raw( ) {
+		$settings = $this->get_settings_for_display();
 
-        $settings = $this->get_settings_for_display();
+		$colors = $this->get_globals_colors($settings);
 
         if($settings['ekit_piechart_bg_hover_animation'] != '') {
-
             $this->add_render_attribute( 'pieechart', 'class', $settings['hover_animation'] );
         }
 
         $this->add_render_attribute( 'pieechart', 'class', 'ekit-single-piechart' );
         if($settings['ekit_piechart_style'] == 'simple'){
-
             $this->add_render_attribute( 'pieechart', 'class', 'text-center' );
         }
 
@@ -652,47 +659,41 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
             $this->add_render_attribute( 'pieechart', 'class', $settings['ekit_piechart_content_type'].' '.'flip-gradient-color' );
         }
 
-        $this->add_render_attribute( 'pieechart', 'class', $settings['ekit_piechart_style'] );
+		$this->add_render_attribute( 'pieechart', 'class', $settings['ekit_piechart_style'] );
+
+		$this->add_render_attribute( 'pieechartscreen', [
+			'class'	=> 'colorful-chart piechart',
+			'data-pie_color_style'	=> $settings['ekit_piechart_color_style'],
+			'data-gradientcolor1'	=> $colors['ekit_piechart_gradientColor1'],
+			'data-gradientcolor2'	=> $colors['ekit_piechart_gradientColor2'],
+		] );
+
+		if($colors['ekit_piechart_line_color'] != '') {
+			$this->add_render_attribute( 'pieechartscreen', 'data-color', $colors['ekit_piechart_line_color'] );
+		}
+
+		if($colors['ekit_piechart_bar_color_bg'] != '') {
+			$this->add_render_attribute( 'pieechartscreen', 'data-barbg', $colors['ekit_piechart_bar_color_bg'] );
+		}
+
+		$piechart_size = $settings['ekit_piechart_size']['size'] != '' ? $settings['ekit_piechart_size']['size'] : 150;
+		$this->add_render_attribute( 'pieechartscreen', 'data-size', $piechart_size );
+
+		$line_size = $settings['ekit_piechart_border_size']['size'] != '' ? $settings['ekit_piechart_border_size']['size'] : 5;
+		$this->add_render_attribute( 'pieechartscreen', 'data-linewidth', $line_size );
 
 
-        $this->add_render_attribute( 'pieechartscreen', 'class', 'colorful-chart piechart' );
+		if($settings['ekit_piechart_percentage'] != '') {
+			$this->add_render_attribute( 'pieechartscreen', 'data-percent', $settings['ekit_piechart_percentage'] );
+		}
 
+		if (!empty($settings['ekit_piechart_icon_image']['url'])) {
+			$this->add_render_attribute('image', 'src', $settings['ekit_piechart_icon_image']['url']);
+			$this->add_render_attribute('image', 'alt', Control_Media::get_image_alt($settings['ekit_piechart_icon_image']));
+			$this->add_render_attribute('image', 'title', Control_Media::get_image_title($settings['ekit_piechart_icon_image']));
 
-        if($settings['ekit_piechart_gradientColor1'] != '' && $settings['ekit_piechart_gradientColor2'] != '') {
-            $this->add_render_attribute( 'pieechartscreen', 'data-pie_color_style', $settings['ekit_piechart_color_style'] );
-            $this->add_render_attribute( 'pieechartscreen', 'data-gradientcolor1', $settings['ekit_piechart_gradientColor1'] );
-            $this->add_render_attribute( 'pieechartscreen', 'data-gradientcolor2', $settings['ekit_piechart_gradientColor2'] );
-        }
-
-        if($settings['ekit_piechart_line_color'] != '') {
-            $this->add_render_attribute( 'pieechartscreen', 'data-color', $settings['ekit_piechart_line_color'] );
-        }
-        if($settings['ekit_piechart_bar_color_bg'] != '') {
-            $this->add_render_attribute( 'pieechartscreen', 'data-barbg', $settings['ekit_piechart_bar_color_bg'] );
-        }
-
-        $piechart_size = $settings['ekit_piechart_size']['size'] != '' ? $settings['ekit_piechart_size']['size'] : 150;
-        $this->add_render_attribute( 'pieechartscreen', 'data-size', $piechart_size );
-
-        $line_size = $settings['ekit_piechart_border_size']['size'] != '' ? $settings['ekit_piechart_border_size']['size'] : 5;
-
-        $this->add_render_attribute( 'pieechartscreen', 'data-linewidth', $line_size );
-
-
-        if($settings['ekit_piechart_percentage'] != '') {
-
-            $this->add_render_attribute( 'pieechartscreen', 'data-percent', $settings['ekit_piechart_percentage'] );
-        }
-
-        if (!empty($settings['ekit_piechart_icon_image']['url'])) {
-
-            $this->add_render_attribute('image', 'src', $settings['ekit_piechart_icon_image']['url']);
-            $this->add_render_attribute('image', 'alt', Control_Media::get_image_alt($settings['ekit_piechart_icon_image']));
-            $this->add_render_attribute('image', 'title', Control_Media::get_image_title($settings['ekit_piechart_icon_image']));
-
-            $image_html = Group_Control_Image_Size::get_attachment_image_html($settings, 'ekit_piechart_icon_image_size_group', 'ekit_piechart_icon_image');
-
-        }
+			$image_html = Group_Control_Image_Size::get_attachment_image_html($settings, 'ekit_piechart_icon_image_size_group', 'ekit_piechart_icon_image');
+		}
 
         $flip_front_start = '';
         $flip_front_end = '';
@@ -772,4 +773,64 @@ class ElementsKit_Widget_Piechart extends Widget_Base {
         </div>
     <?php
     }
+
+	protected function get_globals_colors($settings) {
+		$global_colors = [];
+		$kit_items = $this->get_kit_items();
+		$globals_vars = !empty($settings['__globals__']) ? array_filter($settings['__globals__']) : [];
+		if($globals_vars) {
+			foreach($globals_vars as $key => $globals_var) {
+				parse_str(wp_parse_url($globals_var, PHP_URL_QUERY), $queryParams);
+				if (isset($queryParams['id']) && isset($kit_items[$queryParams['id']]['value'])) {
+					$global_colors[$key] = $kit_items[$queryParams['id']]['value'];
+				}
+			}
+		}
+
+		$color_controls = [
+			'ekit_piechart_line_color',
+			'ekit_piechart_bar_color_bg',
+			'ekit_piechart_gradientColor1',
+			'ekit_piechart_gradientColor2'
+		];
+
+		foreach($color_controls as $color_control) {
+			if(isset($global_colors[$color_control])) {
+				continue;
+			}
+
+			$global_colors[$color_control] = isset($settings[$color_control]) ? $settings[$color_control] : '';
+		}
+
+		return $global_colors;
+	}
+
+	protected function get_kit_items() {
+		$result = [];
+		$kit = Plugin::$instance->kits_manager->get_active_kit_for_frontend();
+
+		$system_items = $kit->get_settings_for_display( 'system_colors' );
+		$custom_items = $kit->get_settings_for_display( 'custom_colors' );
+
+		if ( ! $system_items ) {
+			$system_items = [];
+		}
+
+		if ( ! $custom_items ) {
+			$custom_items = [];
+		}
+
+		$items = array_merge( $system_items, $custom_items );
+
+		foreach ( $items as $index => $item ) {
+			$id = $item['_id'];
+			$result[ $id ] = [
+				'id' => $id,
+				'title' => $item['title'],
+				'value' => $item['color'],
+			];
+		}
+
+		return $result;
+	}
 }

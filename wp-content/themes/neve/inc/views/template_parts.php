@@ -8,7 +8,11 @@
 
 namespace Neve\Views;
 
+use Neve\Compatibility\WPML;
+use Neve\Core\Dynamic_Css;
+use Neve\Core\Settings\Config;
 use Neve\Customizer\Defaults\Layout;
+use Neve_Pro\Modules\Blog_Pro\Dynamic_Style;
 
 /**
  * Class Template_Parts
@@ -25,10 +29,22 @@ class Template_Parts extends Base_View {
 	 */
 	public function init() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'add_featured_post_style' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'add_vertical_spacing_style' ) );
 		add_action( 'neve_do_featured_post', array( $this, 'render_featured_post' ) );
 		add_action( 'neve_blog_post_template_part_content', array( $this, 'render_post' ) );
 		add_filter( 'excerpt_more', array( $this, 'link_excerpt_more' ) );
 		add_filter( 'the_content_more_link', array( $this, 'link_excerpt_more' ) );
+	}
+
+	/**
+	 * Add vertical spacing inline style if the control has values.
+	 */
+	public function add_vertical_spacing_style() {
+		if ( ! get_theme_mod( Config::MODS_CONTENT_VSPACING ) ) {
+			return;
+		}
+		$inline_style = '.page .neve-main, .single:not(.single-product) .neve-main{ margin:var(--c-vspace) }';
+		wp_add_inline_style( 'neve-style', Dynamic_Css::minify_css( $inline_style ) );
 	}
 
 	/**
@@ -107,6 +123,15 @@ class Template_Parts extends Base_View {
 					'post_status' => 'publish',
 				)
 			);
+
+			/**
+			 * Filters the featured posts.
+			 *
+			 * @since 3.5.6
+			 *
+			 * @param array $posts Array of posts. The return value can be an array of posts or an array of post IDs.
+			 */
+			$posts = apply_filters( 'neve_filter_featured_posts', $posts );
 		}
 
 		if ( $target === 'sticky' ) {
@@ -156,6 +181,7 @@ class Template_Parts extends Base_View {
 	 * Render the post.
 	 */
 	public function render_post() {
+
 		$args = array(
 			'post_id'    => 'post-' . get_the_ID(),
 			'post_class' => $this->post_class(),
@@ -185,6 +211,12 @@ class Template_Parts extends Base_View {
 				$class .= ' nv-non-grid-article';
 			}
 		}
+		
+		// Filter the Core classes for missing components.
+		$is_thumbnail_inactive = ! in_array( 'thumbnail', $this->get_ordered_components(), true );
+		if ( $is_thumbnail_inactive ) {
+			$class = str_replace( 'has-post-thumbnail', '', $class );
+		}
 
 		$class .= ' ' . $additional;
 		return $class;
@@ -202,16 +234,12 @@ class Template_Parts extends Base_View {
 		$layout            = $this->get_layout();
 		$is_featured_post  = $post_id !== null;
 		$featured_template = in_array( $layout, [ 'alternative', 'default', 'grid' ], true ) ? 'tp1' : 'tp2';
-		$default_order     = array(
-			'thumbnail',
-			'title-meta',
-			'excerpt',
-		);
-		$order             = json_decode( get_theme_mod( 'neve_post_content_ordering', wp_json_encode( $default_order ) ) );
+
+		$is_thumbnail_active = in_array( 'thumbnail', $this->get_ordered_components(), true );
 
 		if ( in_array( $layout, [ 'alternative', 'default' ], true ) || ( $is_featured_post && $featured_template === 'tp1' ) ) {
 			$markup .= '<div class="' . esc_attr( $layout ) . '-post nv-ft-wrap">';
-			if ( in_array( 'thumbnail', $order, true ) || ( $is_featured_post && $featured_template === 'tp1' ) ) {
+			if ( $is_thumbnail_active || ( $is_featured_post && $featured_template === 'tp1' ) ) {
 				$markup .= $this->get_post_thumbnail( $post_id );
 			}
 			$markup .= '<div class="non-grid-content ' . esc_attr( $layout ) . '-layout-content">';
@@ -225,7 +253,7 @@ class Template_Parts extends Base_View {
 		if ( $layout === 'covers' ) {
 			$markup .= '<div class="cover-post nv-ft-wrap">';
 			$markup .= '<div class="cover-overlay"></div>';
-			if ( in_array( 'thumbnail', $order, true ) ) {
+			if ( $is_thumbnail_active ) {
 				$markup .= $this->get_post_thumbnail( $post_id, true );
 			}
 			$markup .= '<div class="inner">';
@@ -427,24 +455,18 @@ class Template_Parts extends Base_View {
 	 * @return string
 	 */
 	private function get_ordered_content_parts( $exclude_thumbnail = false, $post_id = null ) {
-		$markup        = '';
-		$default_order = array(
-			'thumbnail',
-			'title-meta',
-			'excerpt',
-		);
+		$markup             = '';
+		$ordered_components = $this->get_ordered_components( true );
 
-		$order = get_theme_mod( 'neve_post_content_ordering', wp_json_encode( $default_order ) );
-		$order = json_decode( $order, true );
-		if ( $post_id !== null && in_array( 'thumbnail', $order, true ) ) {
-			$key = array_search( 'thumbnail', $order );
+		if ( $post_id !== null && in_array( 'thumbnail', $ordered_components, true ) ) {
+			$key = array_search( 'thumbnail', $ordered_components );
 			if ( $key !== false ) {
-				unset( $order[ $key ] );
+				unset( $ordered_components[ $key ] );
 			}
-			array_unshift( $order, 'thumbnail' );
+			array_unshift( $ordered_components, 'thumbnail' );
 		}
 
-		foreach ( $order as $content_bit ) {
+		foreach ( $ordered_components as $content_bit ) {
 			switch ( $content_bit ) {
 				case 'thumbnail':
 					if ( $exclude_thumbnail ) {
@@ -480,5 +502,22 @@ class Template_Parts extends Base_View {
 		}
 
 		return $markup;
+	}
+
+	/**
+	 * Get components (thumbnail, title, meta, excerpt) in the order they are set in the Customizer.
+	 *
+	 * @param bool $associative Whether to return an associative array or not.
+	 *
+	 * @return mixed
+	 */
+	public function get_ordered_components( $associative = false ) {
+		$default_ordered_components = array(
+			'thumbnail',
+			'title-meta',
+			'excerpt',
+		);
+
+		return json_decode( get_theme_mod( 'neve_post_content_ordering', wp_json_encode( $default_ordered_components ) ), $associative );
 	}
 }

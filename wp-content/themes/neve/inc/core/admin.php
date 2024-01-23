@@ -12,6 +12,7 @@ namespace Neve\Core;
 
 use Neve\Admin\Dashboard\Plugin_Helper;
 use Neve\Core\Settings\Mods_Migrator;
+use Neve\Core\Theme_Info;
 
 /**
  * Class Admin
@@ -19,6 +20,7 @@ use Neve\Core\Settings\Mods_Migrator;
  * @package Neve\Core
  */
 class Admin {
+	use Theme_Info;
 
 	/**
 	 * Dismiss notice key.
@@ -59,6 +61,17 @@ class Admin {
 			add_action( 'wp_ajax_neve_dismiss_welcome_notice', [ $this, 'remove_notice' ] );
 		}
 
+		// load upsell dismiss only if neve pro is not active or license is invalid.
+		if ( ! $this->has_valid_addons() ) {
+			add_action(
+				'wp_ajax_neve_dismiss_customizer_upsell_notice',
+				[
+					'Neve\Customizer\Options\Upsells',
+					'remove_customizer_upsell_notice',
+				]
+			);
+		}
+
 		add_action( 'admin_menu', [ $this, 'remove_background_submenu' ], 110 );
 		add_action( 'after_switch_theme', [ $this, 'get_previous_theme' ] );
 
@@ -72,6 +85,14 @@ class Admin {
 
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
 		add_filter( 'neve_pro_react_controls_localization', [ $this, 'adapt_conditional_headers' ] );
+
+
+		if ( ! defined( 'NEVE_PRO_VERSION' ) ) {
+			$offer = new Limited_Offers();
+			if ( $offer->can_show_dashboard_banner() && $offer->is_active() ) {
+				$offer->load_dashboard_hooks();
+			}
+		}
 	}
 
 	/**
@@ -114,10 +135,11 @@ class Admin {
 		$tpc_plugin_data['activate']   = $plugin_helper->get_plugin_action_link( $slug );
 		$tpc_plugin_data['deactivate'] = $plugin_helper->get_plugin_action_link( $slug, 'deactivate' );
 		$tpc_plugin_data['version']    = $tpc_version !== false ? $tpc_version : '';
-		$tpc_plugin_data['adminURL']   = admin_url( 'themes.php?page=tiob-starter-sites' );
+		$tpc_plugin_data['adminURL']   = admin_url( 'admin.php?page=tiob-starter-sites' );
 		$tpc_plugin_data['pluginsURL'] = esc_url( admin_url( 'plugins.php' ) );
 		$tpc_plugin_data['ajaxURL']    = esc_url( admin_url( 'admin-ajax.php' ) );
 		$tpc_plugin_data['ajaxNonce']  = esc_attr( wp_create_nonce( 'remove_notice_confirmation' ) );
+		$tpc_plugin_data['canInstall'] = current_user_can( 'install_plugins' );
 
 		return $tpc_plugin_data;
 	}
@@ -145,10 +167,11 @@ class Admin {
 
 		wp_localize_script( 'neve-ss-notice', 'tpcPluginData', $this->get_tpc_plugin_data() );
 		wp_enqueue_script( 'neve-ss-notice' );
+		wp_set_script_translations( 'neve-ss-notice', 'neve' );
 	}
 
 	/**
-	 * Register script for react components.
+	 * Register the script for react components.
 	 */
 	public function register_react_components() {
 		$this->maybe_register_notice_script_starter_sites();
@@ -164,6 +187,7 @@ class Admin {
 				'customizerURL'           => esc_url( admin_url( 'customize.php' ) ),
 			]
 		);
+		wp_set_script_translations( 'neve-components', 'neve' );
 		wp_register_style( 'neve-components', trailingslashit( NEVE_ASSETS_URL ) . 'apps/components/build/style-components.css', [ 'wp-components' ], $deps['version'] );
 		wp_add_inline_style( 'neve-components', Dynamic_Css::get_root_css() );
 	}
@@ -264,18 +288,6 @@ class Admin {
 	 */
 	public function register_rest_routes() {
 		register_rest_route(
-			'nv/migration',
-			'/new_header_builder',
-			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => [ $this, 'migrate_builders_data' ],
-				'permission_callback' => function () {
-					return current_user_can( 'manage_options' );
-				},
-			)
-		);
-
-		register_rest_route(
 			'nv/v1/dashboard',
 			'/plugin-state/(?P<slug>[a-z0-9-]+)',
 			[
@@ -291,42 +303,6 @@ class Admin {
 				],
 			]
 		);
-	}
-
-	/**
-	 * Migration routine request.
-	 *
-	 * @param \WP_REST_Request $request the received request.
-	 *
-	 * @return \WP_REST_Response
-	 *
-	 * @since 3.0.0
-	 */
-	public function migrate_builders_data( \WP_REST_Request $request ) {
-		$is_rollback = $request->get_header( 'rollback' );
-		$is_dismiss  = $request->get_header( 'dismiss' );
-
-		if ( $is_dismiss === 'yes' ) {
-			remove_theme_mod( 'hfg_header_layout' );
-			remove_theme_mod( 'hfg_footer_layout' );
-
-			return new \WP_REST_Response( [ 'success' => true ], 200 );
-		}
-
-		if ( $is_rollback === 'yes' ) {
-			set_theme_mod( 'neve_migrated_builders', false );
-
-			return new \WP_REST_Response( [ 'success' => true ], 200 );
-		}
-
-		$migrator = new Builder_Migrator();
-		$response = $migrator->run();
-
-		if ( $response === true ) {
-			set_theme_mod( 'neve_migrated_builders', true );
-		}
-
-		return new \WP_REST_Response( [ 'success' => $response ], 200 );
 	}
 
 	/**
@@ -517,8 +493,15 @@ class Admin {
 				$name
 			)
 		);
-		$ob_btn_link = admin_url( defined( 'TIOB_PATH' ) ? 'themes.php?page=tiob-starter-sites&onboarding=yes' : 'themes.php?page=' . $theme_page . '&onboarding=yes#starter-sites' );
-		$ob_btn      = sprintf(
+		$ob_btn_link = admin_url( 'admin.php?page=' . $theme_page . '&onboarding=yes#starter-sites' );
+		if ( defined( 'TIOB_PATH' ) ) {
+			$url_path = 'admin.php?page=tiob-starter-sites';
+			if ( current_user_can( 'install_plugins' ) ) {
+				$url_path .= '&onboarding=yes';
+			}
+			$ob_btn_link = admin_url( $url_path );
+		}
+		$ob_btn = sprintf(
 		/* translators: 1 - onboarding url, 2 - button text */
 			'<a href="%1$s" class="button button-primary button-hero install-now" >%2$s</a>',
 			esc_url( $ob_btn_link ),
@@ -532,7 +515,7 @@ class Admin {
 		$options_page_btn = sprintf(
 		/* translators: 1 - options page url, 2 - button text */
 			'<a href="%1$s" class="options-page-btn">%2$s</a>',
-			esc_url( admin_url( 'themes.php?page=' . $theme_page ) ),
+			esc_url( admin_url( 'admin.php?page=' . $theme_page ) ),
 			esc_html__( 'or go to the theme settings', 'neve' )
 		);
 		$notice_picture    = sprintf(

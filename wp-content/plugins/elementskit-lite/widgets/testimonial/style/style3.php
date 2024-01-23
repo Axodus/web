@@ -1,8 +1,7 @@
-<div class="elementskit-testimonial-slider slick-slider arrow_inside <?php echo !empty($settings['ekit_testimonial_show_dot']) ? 'slick-dotted' : '' ?>" <?php echo $this->get_render_attribute_string('wrapper'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped by elementor ?>>
-	<div class="swiper-container">
-		<div class="slick-list swiper-wrapper">
-		<?php
-			foreach ($testimonials as $testimonial):
+<div class="elementskit-testimonial-slider arrow_inside <?php echo !empty($settings['ekit_testimonial_show_dot']) ? 'slider-dotted' : '' ?>" <?php $this->print_render_attribute_string('wrapper'); ?>>
+	<div <?php $this->print_render_attribute_string('swiper-container'); ?>>
+		<div class="swiper-wrapper">
+			<?php foreach ($testimonials as $testimonial):
 				$clientPhoto = '';
 				$wrapTag = 'div';
 				$ratingTag = 'a';
@@ -17,8 +16,8 @@
 				if (isset($testimonial['client_photo']) && !empty($testimonial['client_photo']['url']) &&  sizeof($testimonial['client_photo']) > 0) {
 					$clientPhoto = isset($testimonial['client_photo']['url']) ? $testimonial['client_photo']['url'] : '';  } ?>
 					<div class="swiper-slide">
-						<div class="slick-slide">
-							<<?php echo esc_attr( $wrapTag ); ?> class="elementskit-testimonial_card" style="background-image: url(<?php esc_attr_e($clientPhoto, 'elementskit-lite' );?>);" <?php echo $this->get_render_attribute_string( 'link-' . esc_attr($testimonial['_id'] )); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped by elementor ?>>
+						<div class="swiper-slide-inner">
+							<<?php echo esc_attr( $wrapTag ); ?> class="elementskit-testimonial_card" style="background-image: url(<?php echo esc_url($clientPhoto);?>);" <?php echo $this->get_render_attribute_string( 'link-' . esc_attr($testimonial['_id'] )); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped by elementor ?>>
 								<?php if ($ekit_testimonial_rating_enable == 'yes') : ?>
 								<ul class="elementskit-stars">
 									<?php
@@ -29,7 +28,7 @@
 											$iconStart = 'eicon-star active';
 										}
 									?>
-									<li><<?php echo esc_attr( $ratingTag ); ?>><i class="<?php esc_attr_e( $iconStart, 'elementskit-lite' );?>"></i></<?php echo esc_attr( $ratingTag ); ?>></li>
+									<li><<?php echo esc_attr( $ratingTag ); ?>><i class="<?php echo esc_attr( $iconStart); ?>"></i></<?php echo esc_attr( $ratingTag ); ?>></li>
 
 									<?php }?>
 								</ul>
@@ -37,12 +36,6 @@
 
 								<?php if ( isset($testimonial['review']) && !empty($testimonial['review'])) : ?>
 									<p class="elementskit-commentor-coment"><?php echo isset($testimonial['review']) ? wp_kses($testimonial['review'], \ElementsKit_Lite\Utils::get_kses_array()): ''; ?></p>
-								<?php endif;  ?>
-
-								<?php if ( isset($testimonial['review_youtube_link']) && !empty($testimonial['review_youtube_link'])) : ?>
-									<div class="elementskit-video-popup-content">
-										<a href="<?php esc_attr_e($review_youtube_link, 'elementskit-lite');?>" class="video-popup"><i class="icon icon-play"></i></a>
-									</div><!-- .elementskit-video-popup-content END -->
 								<?php endif;  ?>
 
 								<span class="elementskit-profile-info">
@@ -55,10 +48,14 @@
 					</div>
 			<?php endforeach; ?>
 		</div>
+
+		<?php if($settings['ekit_testimonial_show_dot'] == 'yes') : ?>
+			<div class="swiper-pagination"></div>
+		<?php endif; ?>
+
+		<?php if(!empty($settings['ekit_testimonial_show_arrow'])) : ?>
+			<div class="swiper-navigation-button swiper-button-prev"><i class="<?php echo esc_attr($prevArrowIcon); ?>"></i></div>
+			<div class="swiper-navigation-button swiper-button-next"><i class="<?php echo esc_attr($nextArrowIcon); ?>"></i></div>
+		<?php endif; ?>
 	</div>
-	<ul aria-describedby="paginations" class="slick-dots swiper-pagination swiper-pagination-clickable swiper-pagination-bullets"></ul>
-	<?php if(!empty($settings['ekit_testimonial_show_arrow'])) : ?>
-		<button type="button" class="slick-prev slick-arrow"><i class="<?php echo esc_attr($prevArrowIcon); ?>"></i></button>
-		<button type="button" class="slick-next slick-arrow"><i class="<?php echo esc_attr($nextArrowIcon); ?>"></i></button>
-	<?php endif; ?>
 </div>

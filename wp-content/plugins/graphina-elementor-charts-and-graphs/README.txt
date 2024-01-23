@@ -1,17 +1,16 @@
 === Graphina - Elementor Charts and Graphs ===
 Contributors: iqonicdesign
-Tags: elementor charts, elementor graphs, Wordpress data visualization, elementor addon,  elementor apex charts,  graphina
-Requires PHP: 5.2.4
-Requires at least: 3.0.1
-Tested up to: 6.0
-Stable tag: 1.8.5
+Tags: elementor charts, elementor graphs, Wordpress data visualization, elementor addon,  elementor apex charts,  graphina, area chart, data visualization, donut chart, dynamic charts, dynamic CSV charts, dynamic data, elementor apex charts, elementor charts, elementor counters, elementor datatable, elementor graphs, google sheets, graph, line chart, pie chart
+Requires PHP: 7.4.0
+Requires at least: 5.9
+Tested up to: 6.4.1
+Stable tag: 1.8.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Most Powerful Data visualization plugin for WordPress Elementor. The easiest way to build gorgeous Charts & Graphs on your Elementor website.
 
 == Description ==
-
 
 # Its like WordPress Elementor Charts on STEROIDS* 💊
 Creating WordPress Charts and Graphs is hard and boring. We make it a whole lot EASIER, QUICKER, more POWERFUL, and more FUN.
@@ -227,6 +226,19 @@ Yes, we'd love to hear from you at <a href="mailto:hello@iqonic.design">hello@iq
 
 
 == Changelog ==
+
+= 1.8.8 - 01/12/2023 =
+- Bug fix
+
+= 1.8.7 - 18/11/2023 =
+- [Update] Apexcharts Library
+- WordPress version 6.4 compatible 
+- Elementor version 3.17 compatible 
+- Bug fix
+
+= 1.8.6 - 28/08/2023 =
+- WordPress version 6.3 compatible 
+- Bug fix
 
 = 1.8.5 - 15/03/2023 =
 - Bug fix

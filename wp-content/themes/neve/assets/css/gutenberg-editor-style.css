@@ -445,12 +445,10 @@ body .editor-styles-wrapper p {
   border-width: 4px;
 }
 
-.editor-styles-wrapper .wp-block-separator.is-style-dots {
-  border-top: 4px dotted;
-}
-
 .editor-styles-wrapper .wp-block-separator.is-style-dots::before {
-  content: none;
+  content: "";
+  border-top: 4px dotted;
+  display: block;
 }
 
 .editor-styles-wrapper .wp-block-button .wp-block-button__link:hover {

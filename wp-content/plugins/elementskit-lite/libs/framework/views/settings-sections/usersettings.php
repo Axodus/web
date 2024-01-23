@@ -467,8 +467,7 @@ $pro_active = ( in_array( 'elementskit/elementskit.php', apply_filters( 'active_
 						$user_id     = ( ! isset( $user_data['instragram']['user_id'] ) ) ? '' : esc_html( $user_data['instragram']['user_id'] );
 						$insta_token = ( ! isset( $user_data['instragram']['token'] ) ) ? '' : esc_html( $user_data['instragram']['token'] );
 						$insta_time  = ( ! isset( $user_data['instragram']['token_expire'] ) ) ? '' : intval( $user_data['instragram']['token_expire'] );
-						$insta_gen   = ( ! isset( $user_data['instragram']['token_generated'] ) ) ? '' :
-										date( 'Y-m-d', strtotime( $user_data['instragram']['token_generated'] ) );
+						$insta_gen   = ( ! isset( $user_data['instragram']['token_generated'] ) ) ? '' : gmdate('Y-m-d', strtotime($user_data['instragram']['token_generated']));
 
 						$this->utils->input(
 							array(
@@ -510,7 +509,6 @@ $pro_active = ( in_array( 'elementskit/elementskit.php', apply_filters( 'active_
 								'info'        => esc_html__( 'This is need to calculate the remaining time for token', 'elementskit-lite' ),
 							)
 						);
-
 
 						?>
 
@@ -555,26 +553,57 @@ $pro_active = ( in_array( 'elementskit/elementskit.php', apply_filters( 'active_
 					<div class="attr-panel-body">
 						<div class="ekit-admin-user-data-separator"></div>
 						<?php
-						$this->utils->input(
-							array(
-								'type'        => 'text',
-								'name'        => 'user_data[zoom][api_key]',
-								'label'       => esc_html__( 'Api key', 'elementskit-lite' ),
-								'placeholder' => 'FmOUK_vdR-eepOExMhN7Kg',
-								'value'       => ( ! isset( $user_data['zoom']['api_key'] ) ) ? '' : ( $user_data['zoom']['api_key'] ),
-							)
-						);
-						?>
-						<?php
-						$this->utils->input(
-							array(
-								'type'        => 'text',
-								'name'        => 'user_data[zoom][secret_key]',
-								'label'       => esc_html__( 'Secret Key', 'elementskit-lite' ),
-								'placeholder' => 'OhDwAoNflUK6XkFB8ShCY5R7I8HxyWLMXR2SHK',
-								'value'       => ( ! isset( $user_data['zoom']['secret_key'] ) ) ? '' : ( $user_data['zoom']['secret_key'] ),
-							)
-						);
+						if(method_exists('ElementsKit', 'version') && version_compare(\ElementsKit::version(), '3.5.0', '>')) {
+							$this->utils->input(
+								array(
+									'type'        => 'text',
+									'name'        => 'user_data[zoom][account_id]',
+									'label'       => esc_html__( 'Account ID', 'elementskit-lite' ),
+									'placeholder' => 'YhZDX-CdQ9KpttH2Ho7f0g',
+									'value'       => ( ! isset( $user_data['zoom']['account_id'] ) ) ? '' : ( $user_data['zoom']['account_id'] ),
+								)
+							);
+
+							$this->utils->input(
+								array(
+									'type'        => 'text',
+									'name'        => 'user_data[zoom][client_id]',
+									'label'       => esc_html__( 'Client ID', 'elementskit-lite' ),
+									'placeholder' => 'dZMbttQeRUCaxzXtKoYZVQ',
+									'value'       => ( ! isset( $user_data['zoom']['client_id'] ) ) ? '' : ( $user_data['zoom']['client_id'] ),
+								)
+							);
+
+							$this->utils->input(
+								array(
+									'type'        => 'text',
+									'name'        => 'user_data[zoom][client_secret]',
+									'label'       => esc_html__( 'Client Secret', 'elementskit-lite' ),
+									'placeholder' => '3Tlz4Dqd2hyf3q3bLRfn1GF6hr8tB2KR',
+									'value'       => ( ! isset( $user_data['zoom']['client_secret'] ) ) ? '' : ( $user_data['zoom']['client_secret'] ),
+								)
+							);
+						} else {
+							$this->utils->input(
+								array(
+									'type'        => 'text',
+									'name'        => 'user_data[zoom][api_key]',
+									'label'       => esc_html__( 'Api key', 'elementskit-lite' ),
+									'placeholder' => 'FmOUK_vdR-eepOExMhN7Kg',
+									'value'       => ( ! isset( $user_data['zoom']['api_key'] ) ) ? '' : ( $user_data['zoom']['api_key'] ),
+								)
+							);
+
+							$this->utils->input(
+								array(
+									'type'        => 'text',
+									'name'        => 'user_data[zoom][secret_key]',
+									'label'       => esc_html__( 'Secret Key', 'elementskit-lite' ),
+									'placeholder' => 'OhDwAoNflUK6XkFB8ShCY5R7I8HxyWLMXR2SHK',
+									'value'       => ( ! isset( $user_data['zoom']['secret_key'] ) ) ? '' : ( $user_data['zoom']['secret_key'] ),
+								)
+							);
+						}
 						?>
 						<div class="ekit-admin-accordion-btn-group">
 							<a href="https://token.wpmet.com/index.php?provider=zoom"
@@ -664,7 +693,15 @@ $pro_active = ( in_array( 'elementskit/elementskit.php', apply_filters( 'active_
 						?>
                         <div>
                             <ol>
-                                <li><?php echo sprintf(esc_html__('Click %s and create App/Project On Google developer account', 'elementskit-lite'), '<a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a>')?></li>
+                                <li><?php 
+
+								echo sprintf(
+									'%1$s <a href="%2$s" target="_blank">%2$s</a> %3$s',
+									esc_html__('Click', 'elementskit-lite'),
+									esc_html('https://console.cloud.google.com'),
+									esc_html__('and create App/Project On Google developer account', 'elementskit-lite')
+								); ?>
+								</li>
                                 <li><?php esc_html_e('Must add the following URL to the "Valid OAuth redirect URIs" field:', 'elementskit-lite')?> <strong style="font-weight:700;"><?php echo esc_url( admin_url('admin.php?page=elementskit') )?></strong></li>
                                 <li><?php esc_html_e('After getting the App ID & App Secret, put those information', 'elementskit-lite')?></li>
                                 <li><?php esc_html_e('Click on "Save Changes"', 'elementskit-lite')?></li>

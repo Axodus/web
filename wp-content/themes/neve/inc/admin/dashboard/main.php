@@ -7,6 +7,7 @@
 
 namespace Neve\Admin\Dashboard;
 
+use Neve\Core\Limited_Offers;
 use Neve\Core\Theme_Info;
 /**
  * Class Main
@@ -83,6 +84,49 @@ class Main {
 		add_action( 'admin_menu', [ $this, 'register' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
 		add_action( 'init', array( $this, 'register_settings' ) );
+		add_action( 'init', array( $this, 'register_about_page' ), 1 );
+	}
+
+	/**
+	 * Add the about page with respect to the white label settings.
+	 *
+	 * @return void
+	 */
+	public function register_about_page() {
+		$theme         = wp_get_theme();
+		$filtered_name = apply_filters( 'ti_wl_theme_name', $theme->__get( 'Name' ) );
+		$slug          = $theme->__get( 'stylesheet' );
+
+		if ( empty( $slug ) || empty( $filtered_name ) ) {
+			return;
+		}
+
+		// We check if the name is different from the filtered name,
+		// if it is, the whitelabel is in use and we should not add the about page.
+		// this check allows for child themes to use the about page.
+		if ( $filtered_name !== $theme->__get( 'Name' ) ) {
+			return;
+		}
+
+		add_filter(
+			'neve_about_us_metadata',
+			function () use ( $filtered_name ) {
+
+				return [
+					// Top-level page in the dashboard sidebar
+					'location'         => 'neve-welcome',
+					// Logo to display on the page
+					'logo'             => get_template_directory_uri() . '/assets/img/dashboard/logo.svg',
+					// Condition to show or hide the upgrade menu in the sidebar
+					'has_upgrade_menu' => ! defined( 'NEVE_PRO_VERSION' ),
+					// Add predefined product pages to the about page.
+					'product_pages'    => [ 'otter-page' ],
+					// Upgrade menu item link & text
+					'upgrade_link'     => tsdk_utmify( esc_url( 'https://themeisle.com/themes/neve/upgrade/' ), 'aboutfilter', 'nevedashboard' ),
+					'upgrade_text'     => __( 'Upgrade', 'neve' ) . ' ' . $filtered_name,
+				];
+			}
+		);
 	}
 
 	/**
@@ -124,13 +168,106 @@ class Main {
 		if ( empty( $theme['name'] ) || empty( $theme['slug'] ) ) {
 			return;
 		}
-		/* translators: %s - Theme name */
-		$page_title = sprintf( __( '%s Options', 'neve' ), wp_kses_post( $theme['name'] ) );
-		/* translators: %s - Theme name */
-		$menu_name = sprintf( __( '%s Options', 'neve' ), wp_kses_post( $theme['name'] ) );
 
 		$theme_page = ! empty( $theme['template'] ) ? $theme['template'] . '-welcome' : $theme['slug'] . '-welcome';
-		add_theme_page( $page_title, $menu_name, 'activate_plugins', $theme_page, [ $this, 'render' ] );
+
+		$icon = 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI3LjQuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAzMiAzMiIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMzIgMzI7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbC1ydWxlOmV2ZW5vZGQ7Y2xpcC1ydWxlOmV2ZW5vZGQ7ZmlsbDojRkZGRkZGO30KPC9zdHlsZT4KPHBhdGggY2xhc3M9InN0MCIgZD0iTTAsMS42QzAsMC43LDAuNywwLDEuNiwwaDI4LjhDMzEuMywwLDMyLDAuNywzMiwxLjZWMzBjMCwwLjktMC43LDEuNi0xLjYsMS42SDEuNkMwLjcsMzEuNSwwLDMwLjgsMCwzMFYxLjZ6CgkgTTEzLDE1Ljh2Ny41SDkuMVY4YzAtMC4xLDAtMC4xLDAuMS0wLjJjMCwwLDAuMSwwLDAuMiwwLjFsOS42LDcuOFY4LjJoMy44djE1LjJjMCwwLjEsMCwwLjEtMC4xLDAuMmMwLDAtMC4xLDAtMC4yLTAuMUwxMywxNS44egoJIE0yMi44LDI1LjdIOS4xVjI3aDEzLjdWMjUuN3oiLz4KPC9zdmc+Cg==';
+		if ( $theme['name'] !== 'Neve' ) {
+			$icon = 'dashicons-admin-appearance';
+		}
+		$neve_icon  = apply_filters( 'neve_menu_icon', $icon );
+		$priority   = apply_filters( 'neve_menu_priority', 59 );  // The position of the menu item, 60 is the position of the Appearance menu.
+		$capability = 'manage_options';
+
+		// Place a theme page in the Appearance menu, for older versions of Neve Pro or TPC. to maintain backwards compatibility.
+		if (
+			( defined( 'NEVE_PRO_VERSION' ) && version_compare( NEVE_PRO_VERSION, '2.6.1', '<=' ) ) ||
+			( defined( 'TIOB_VERSION' ) && version_compare( TIOB_VERSION, '1.1.38', '<=' ) )
+		) {
+			add_theme_page(
+				/* translators: %s - Theme name */
+				sprintf( __( '%s Options', 'neve' ), wp_kses_post( $theme['name'] ) ),
+				/* translators: %s - Theme name */
+				sprintf( __( '%s Options', 'neve' ), wp_kses_post( $theme['name'] ) ),
+				$capability,
+				'admin.php?page=neve-welcome'
+			);
+		}
+
+		add_menu_page( // phpcs:ignore WPThemeReview.PluginTerritory.NoAddAdminPages.add_menu_pages_add_menu_page
+			wp_kses_post( $theme['name'] ),
+			wp_kses_post( $theme['name'] ),
+			$capability,
+			$theme_page,
+			[ $this, 'render' ],
+			$neve_icon, // The URL to the icon to be used for this menu
+			$priority
+		);
+
+		// Add Dashboard submenu. Same slug as parent to allow renaming the automatic submenu that is added.
+		add_submenu_page( // phpcs:ignore WPThemeReview.PluginTerritory.NoAddAdminPages.add_menu_pages_add_submenu_page
+			$theme_page,
+			/* translators: %s - Theme name */
+			sprintf( __( '%s Options', 'neve' ), wp_kses_post( $theme['name'] ) ),
+			/* translators: %s - Theme name */
+			sprintf( __( '%s Options', 'neve' ), wp_kses_post( $theme['name'] ) ),
+			$capability,
+			$theme_page,
+			[ $this, 'render' ]
+		);
+
+		$this->copy_customizer_page( $theme_page );
+
+		if ( ! defined( 'NEVE_PRO_VERSION' ) || 'valid' !== apply_filters( 'product_neve_license_status', false ) ) {
+			// Add Custom Layout submenu for upsell.
+			add_submenu_page( // phpcs:ignore WPThemeReview.PluginTerritory.NoAddAdminPages.add_menu_pages_add_submenu_page
+				$theme_page,
+				__( 'Custom Layouts', 'neve' ),
+				__( 'Custom Layouts', 'neve' ),
+				$capability,
+				'admin.php?page=neve-welcome#custom-layouts'
+			);
+		}
+	}
+
+	/**
+	 * Copy the customizer page to the dashboard.
+	 *
+	 * @param string $theme_page The theme page slug.
+	 *
+	 * @return void
+	 */
+	private function copy_customizer_page( $theme_page ) {
+		global $submenu;
+		if ( ! isset( $submenu['themes.php'] ) ) {
+			return;
+		}
+		$themes_menu = $submenu['themes.php'];
+		if ( empty( $themes_menu ) ) {
+			return;
+		}
+		$customize_pos = array_search( 'customize', array_column( $themes_menu, 1 ) );
+		if ( false === $customize_pos ) {
+			return;
+		}
+		$themes_page_keys = array_keys( $themes_menu );
+		if ( ! isset( $themes_page_keys[ $customize_pos ] ) ) {
+			return;
+		}
+
+		$customizer_menu_item = array_splice( $themes_menu, $customize_pos, 1 );
+		$customizer_menu_item = reset( $customizer_menu_item );
+		if ( empty( $customizer_menu_item ) ) {
+			return;
+		}
+
+		add_submenu_page( // phpcs:ignore WPThemeReview.PluginTerritory.NoAddAdminPages.add_menu_pages_add_submenu_page
+			$theme_page,
+			$customizer_menu_item[0],
+			$customizer_menu_item[0],
+			'manage_options',
+			'customize.php'
+		);
 	}
 
 	/**
@@ -154,7 +291,7 @@ class Main {
 		$theme      = $this->theme_args;
 		$theme_page = ! empty( $theme['template'] ) ? $theme['template'] . '-welcome' : $theme['slug'] . '-welcome';
 
-		if ( $screen->id !== 'appearance_page_' . $theme_page ) {
+		if ( $screen->id !== 'toplevel_page_' . $theme_page ) {
 			return;
 		}
 
@@ -179,6 +316,9 @@ class Main {
 	 * @return array
 	 */
 	private function get_localization() {
+
+		$offer = new Limited_Offers();
+
 		$old_about_config  = apply_filters( 'ti_about_config_filter', [ 'useful_plugins' => true ] );
 		$theme_name        = apply_filters( 'ti_wl_theme_name', $this->theme_args['name'] );
 		$plugin_name       = apply_filters( 'ti_wl_plugin_name', 'Neve Pro' );
@@ -197,6 +337,7 @@ class Main {
 			'showFeedbackNotice'      => $this->should_show_feedback_notice(),
 			'allfeaturesNeveProURL'   => tsdk_utmify( 'https://themeisle.com/themes/neve/upgrade/', 'seeallfeatures', 'freevspropage' ),
 			'startSitesgetNeveProURL' => tsdk_utmify( 'https://themeisle.com/themes/neve/upgrade/', 'welcomestartersitescard', 'nevedashboard' ),
+			'customLayoutsNeveProURL' => tsdk_utmify( 'https://themeisle.com/themes/neve/upgrade/', 'customlayoutscard', 'nevedashboard' ),
 			'upgradeURL'              => apply_filters( 'neve_upgrade_link_from_child_theme_filter', tsdk_utmify( 'https://themeisle.com/themes/neve/upgrade/', 'getpronow', 'freevspropage' ) ),
 			'supportURL'              => esc_url( 'https://wordpress.org/support/theme/neve/' ),
 			'docsURL'                 => esc_url( 'https://docs.themeisle.com/article/946-neve-doc' ),
@@ -234,9 +375,12 @@ class Main {
 			'hasFileSystem'           => WP_Filesystem(),
 			'hidePluginsTab'          => apply_filters( 'neve_hide_useful_plugins', ! array_key_exists( 'useful_plugins', $old_about_config ) ),
 			'tpcPath'                 => defined( 'TIOB_PATH' ) ? TIOB_PATH . 'template-patterns-collection.php' : 'template-patterns-collection/template-patterns-collection.php',
-			'tpcAdminURL'             => admin_url( 'themes.php?page=tiob-starter-sites' ),
+			'tpcAdminURL'             => admin_url( 'admin.php?page=tiob-starter-sites' ),
 			'pluginsURL'              => esc_url( admin_url( 'plugins.php' ) ),
 			'getPluginStateBaseURL'   => esc_url( rest_url( '/nv/v1/dashboard/plugin-state/' ) ),
+			'canInstallPlugins'       => current_user_can( 'install_plugins' ),
+			'canActivatePlugins'      => current_user_can( 'activate_plugins' ),
+			'deal'                    => ! defined( 'NEVE_PRO_VERSION' ) ? $offer->get_localized_data() : array(),
 		];
 
 		if ( defined( 'NEVE_PRO_PATH' ) ) {
@@ -244,8 +388,16 @@ class Main {
 			$is_otter_installed                    = array_key_exists( 'otter-pro/otter-pro.php', $installed_plugins );
 			$is_sparks_installed                   = array_key_exists( 'sparks-for-woocommerce/sparks-for-woocommerce.php', $installed_plugins );
 			$data['changelogPro']                  = $this->cl_handler->get_changelog( NEVE_PRO_PATH . '/CHANGELOG.md' );
+			$data['isOtterProInstalled']           = $is_otter_installed;
 			$data['otterProInstall']               = $is_otter_installed ? esc_url( wp_nonce_url( admin_url( 'plugins.php?action=activate&plugin=otter-pro%2Fotter-pro.php&plugin_status=all&paged=1&s' ), 'activate-plugin_otter-pro/otter-pro.php' ) ) : esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=install_otter_pro' ), 'install_otter_pro' ) );
 			$data['sparksInstallActivateEndpoint'] = $is_sparks_installed ? esc_url( wp_nonce_url( admin_url( 'plugins.php?action=activate&plugin=sparks-for-woocommerce%2Fsparks-for-woocommerce.php&plugin_status=all&paged=1&s' ), 'activate-plugin_sparks-for-woocommerce/sparks-for-woocommerce.php' ) ) : esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=install_sparks' ), 'install_sparks' ) );
+			$data['moduleObserver']                = array(
+				'customLayouts' => array(
+					'labelSubMenu' => __( 'Custom Layouts', 'neve' ),
+					'linkSubMenu'  => 'edit.php?post_type=neve_custom_layouts',
+				),
+			);
+
 		}
 
 		if ( isset( $_GET['onboarding'] ) && $_GET['onboarding'] === 'yes' ) {
@@ -499,6 +651,7 @@ class Main {
 				$available[ $slug ]['path']       = $this->plugin_helper->get_plugin_path( $slug );
 				$available[ $slug ]['activate']   = $this->plugin_helper->get_plugin_action_link( $slug );
 				$available[ $slug ]['deactivate'] = $this->plugin_helper->get_plugin_action_link( $slug, 'deactivate' );
+				$available[ $slug ]['network']    = $this->plugin_helper->get_is_network_wide( $slug );
 				$available[ $slug ]['version']    = ! empty( $available[ $slug ]['version'] ) ? $this->plugin_helper->get_plugin_version( $slug, $available[ $slug ]['version'] ) : '';
 			}
 
@@ -527,6 +680,7 @@ class Main {
 				'path'        => $this->plugin_helper->get_plugin_path( $slug ),
 				'activate'    => $this->plugin_helper->get_plugin_action_link( $slug ),
 				'deactivate'  => $this->plugin_helper->get_plugin_action_link( $slug, 'deactivate' ),
+				'network'     => $this->plugin_helper->get_is_network_wide( $slug ),
 			];
 		}
 

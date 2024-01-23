@@ -47,6 +47,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 		 * @var Plugin_Usage_Tracker
 		 */
 		private static $_instance = null;
+
+		private $disabled_wp_cron;
+		private $enable_self_cron;
+		private $require_optin;
+		private $include_goodbye_form;
+		private $marketing;
+		private $options;
+		private $item_id;
+		private $notice_options;
+
 		/**
 		 * Get Instance of Plugin_Usage_Tracker
 		 * @return Plugin_Usage_Tracker
@@ -607,6 +617,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 				'plugin_action'	=> 'no'
 			) );
 
+			$url_yes = wp_nonce_url( $url_yes, '_wpnonce_optin_' . $this->plugin_name );
+			$url_no  = wp_nonce_url( $url_no, '_wpnonce_optin_' . $this->plugin_name );
+
 			// Decide on notice text
 			$notice_text = $this->notice_options['notice'] . ' <a href="#" class="wpinsights-'. esc_attr( $this->plugin_name ) .'-collect">'. $this->notice_options['consent_button_text'] .'</a>';
 			$extra_notice_text = $this->notice_options['extra_notice'];
@@ -647,7 +660,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 		 * @return void
 		 */
 		public function clicked(){
-			if( isset( $_GET['plugin'] ) && trim($_GET['plugin']) === $this->plugin_name && isset( $_GET['plugin_action'] ) ) {
+			if ( isset( $_GET['_wpnonce'] ) && isset( $_GET['plugin'] ) && trim( $_GET['plugin'] ) === $this->plugin_name && isset( $_GET['plugin_action'] ) ) {
+				if ( ! wp_verify_nonce( $_GET['_wpnonce'], '_wpnonce_optin_' . $this->plugin_name ) ) {
+					return;
+				}
+
 				if( isset( $_GET['tab'] ) && $_GET['tab'] === 'plugin-information' ) {
                     return;
                 }
@@ -824,7 +841,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 				$styles .= $wrapper_class . ' .wpinsights-goodbye-form-footer { padding: 8px 18px; margin-bottom: 15px; }';
 				$styles .= $wrapper_class . ' .wpinsights-goodbye-form-footer > .wpinsights-goodbye-form-buttons { display: flex; align-items: center; justify-content: space-between; }';
 				$styles .= $wrapper_class . ' .wpinsights-goodbye-form-footer .wpinsights-submit-btn {';
-					$styles .= 'background-color: #d30c5c; -webkit-border-radius: 3px; border-radius: 3px; color: #fff; line-height: 1; padding: 15px 20px; font-size: 13px;';
+					$styles .= 'background-color: #f3bafd; -webkit-border-radius: 3px; border-radius: 3px; color: #0c0d0e; line-height: 1; padding: 10px 20px; font-size: 13px; font-weight: 500; text-transform: uppercase; transition: .3s;';
+				$styles .= '}';
+                $styles .= $wrapper_class . ' .wpinsights-goodbye-form-footer .wpinsights-submit-btn:hover {';
+					$styles .= 'background-color: #f5d0fe;';
 				$styles .= '}';
 				$styles .= $wrapper_class . ' .wpinsights-goodbye-form-footer .wpinsights-deactivate-btn {';
 					$styles .= 'font-size: 13px; color: #a4afb7; background: none; float: right; padding-right: 10px; width: auto; text-decoration: underline;';

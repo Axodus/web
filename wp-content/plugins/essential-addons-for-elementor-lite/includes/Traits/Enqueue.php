@@ -10,16 +10,16 @@ use \Essential_Addons_Elementor\Classes\Helper as EnqueueHelper;
 
 trait Enqueue
 {
-    public function before_enqueue_styles($widgets)
-    {
-        // Compatibility: Gravity forms
-        if (in_array('gravity-form', $widgets) && class_exists('GFCommon')) {
-            foreach (EnqueueHelper::get_gravity_form_list() as $form_id => $form_name) {
-                if ($form_id != '0') {
-                    gravity_form_enqueue_scripts($form_id);
-                }
-            }
-        }
+	public function before_enqueue_styles( $widgets ) {
+		$widgets = (array) $widgets;
+		// Compatibility: Gravity forms
+		if ( in_array( 'gravity-form', $widgets ) && class_exists( 'GFCommon' ) ) {
+			foreach ( EnqueueHelper::get_gravity_form_list() as $form_id => $form_name ) {
+				if ( $form_id != '0' ) {
+					gravity_form_enqueue_scripts( $form_id );
+				}
+			}
+		}
 
         // Compatibility: WPforms
         if (in_array('wpforms', $widgets) && function_exists('wpforms')) {
@@ -56,7 +56,7 @@ trait Enqueue
 	        }
 	        $recaptcha_api_args = apply_filters( 'eael_lr_recaptcha_api_args', $recaptcha_api_args );
 	        $recaptcha_api_args = http_build_query( $recaptcha_api_args );
-            wp_register_script('eael-recaptcha', "https://www.google.com/recaptcha/api.js?{$recaptcha_api_args}", false, EAEL_PLUGIN_VERSION, false);
+            wp_register_script('eael-recaptcha', "https://www.recaptcha.net/recaptcha/api.js?{$recaptcha_api_args}", false, EAEL_PLUGIN_VERSION, false);
         }
     }
 
@@ -75,6 +75,18 @@ trait Enqueue
         wp_enqueue_style(
             'eael-editor',
             $this->safe_url(EAEL_PLUGIN_URL . 'assets/admin/css/editor.css'),
+            false,
+	        EAEL_PLUGIN_VERSION
+        );
+    }
+    
+    // frontend styles
+    public function frontend_enqueue_scripts()
+    {
+        // ea icon font
+        wp_register_style(
+            'ea-icon-frontend',
+            $this->safe_url(EAEL_PLUGIN_URL . 'assets/admin/css/eaicon.css'),
             false,
 	        EAEL_PLUGIN_VERSION
         );
@@ -113,9 +125,15 @@ trait Enqueue
             background-image: url({$src});
             background-repeat: no-repeat;
             background-position: center center;
-            margin-left: 5px;
             position: relative;
-            bottom: 5px;
+        }
+        
+		.elementor-add-new-section .elementor-add-templately-promo-button > i{
+            height: 12px;
+        }
+        
+        body .elementor-add-new-section .elementor-add-section-area-button {
+            margin-left: 0;
         }";
         wp_add_inline_style( 'elementor-icons', $css );
     }

@@ -174,18 +174,24 @@ function graphina_is_preview_mode()
     return true;
 }
 
-function graphina_ajax_reload($callAjax,$new_settings,$type,$mainId){
+function graphina_ajax_reload($callAjax,$new_settings,$type,$mainId,$control_settings=[]){
+    if($callAjax!=true) return;
+
+
     ?><script>
-        if(typeof getDataForChartsAjax !== "undefined" && '<?php echo $callAjax; ?>' === "1") {
+        if(typeof getDataForChartsAjax !== "undefined") {
             if( !['mixed'].includes('<?php echo $type; ?>' )){
                 getDataForChartsAjax('<?php echo empty($new_settings) ?>' ? graphina_localize.graphinaAllGraphsOptions['<?php echo $mainId ?>'].setting_date : <?php echo json_encode($new_settings); ?> , '<?php echo $type; ?>', '<?php echo $mainId; ?>');
             }
-            if(('<?php echo empty($new_settings) ?>' ? graphina_localize.graphinaAllGraphsOptions['<?php echo $mainId ?>'].setting_date : <?php echo json_encode($new_settings); ?>)['iq_'+'<?php echo $type ?>'+ '_can_chart_reload_ajax'] && ('<?php echo empty($new_settings) ?>' ? graphina_localize.graphinaAllGraphsOptions['<?php echo $mainId ?>'].setting_date : <?php echo json_encode($new_settings); ?>)['iq_'+'<?php echo $type ?>'+ '_can_chart_reload_ajax'] === 'yes' ){
+
+            <?php if(isset($control_settings['iq_'.$type . '_can_chart_reload_ajax']) && $control_settings['iq_'.$type . '_can_chart_reload_ajax'] == "yes" ){
+                ?>
                 let ajaxIntervalTime = parseInt(('<?php echo empty($new_settings) ?>' ? graphina_localize.graphinaAllGraphsOptions['<?php echo $mainId ?>'].setting_date : <?php echo json_encode($new_settings); ?>)['iq_'+'<?php echo $type ?>'+ '_interval_data_refresh']) * 1000;
                 window.ajaxIntervalGraphina_<?php echo $mainId; ?> = setInterval(function () {
                     getDataForChartsAjax('<?php echo empty($new_settings) ?>' ? graphina_localize.graphinaAllGraphsOptions['<?php echo $mainId ?>'].setting_date : <?php echo json_encode($new_settings); ?>, '<?php echo $type; ?>', '<?php echo $mainId; ?>');
                 }, ajaxIntervalTime);
-            }
+                <?php  } ?>
+        
         }
     </script>
     <?php
@@ -429,12 +435,12 @@ function graphina_chart_widget_content($this_,$mainId,$settings){
         <div class="">
             <?php if (!empty($settings['iq_'.$type.'_is_card_heading_show']) && $settings['iq_'.$type.'_is_card_heading_show'] === 'yes'
                 && !empty($settings['iq_'.$type.'_chart_card_show']) && $settings['iq_'.$type.'_chart_card_show']  === 'yes') { ?>
-                <h4 class="heading graphina-chart-heading" style="<?php echo $heading_text_align.$heading_color; ?>">
+                <h4 class="heading graphina-chart-heading" style="<?php  echo isset($_REQUEST['action']) ?'' : $heading_text_align.$heading_color; ?>">
                     <?php echo html_entity_decode($title); ?>
                 </h4>
             <?php }
             if (!empty($settings['iq_'.$type.'_is_card_desc_show']) && $settings['iq_'.$type.'_is_card_desc_show'] === 'yes'  && !empty($settings['iq_'.$type.'_chart_card_show']) && $settings['iq_'.$type.'_chart_card_show'] === 'yes') { ?>
-                <p class="sub-heading graphina-chart-sub-heading" style="<?php echo $subheading_text_align.$subheading_color; ?>">
+                <p class="sub-heading graphina-chart-sub-heading" style="<?php  echo isset($_REQUEST['action']) ?'' : $subheading_text_align.$subheading_color; ?>">
                     <?php echo html_entity_decode($description); ?>
                 </p>
             <?php } ?>
@@ -497,7 +503,7 @@ function graphina_chart_widget_content($this_,$mainId,$settings){
 }
 
 function graphina_widget_id($this_el){
-    $post_id = get_the_ID();
+    $post_id = get_queried_object_id();
     $post_id = !empty($post_id) ? '_'.$post_id : '';
     return $this_el->get_id().$post_id;
 }
